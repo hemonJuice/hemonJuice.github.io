@@ -1,0 +1,12 @@
+body {
+    background-color:#b0c4de;
+}
+
+.content {
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+}
+h1{margin-bottom:0;padding-bottom:0}
+p{margin-bottom:0;padding-bottom:0}

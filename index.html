@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hanwen Ju</title>
+    <link rel="stylesheet" type="text/css" href="index_style.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="https://use.typekit.net/qys7zuv.css">
+</head>
+<body>  
+
+    <div class="mainCont_index">
+
+        <div class="cont1_index">  
+            <div class = "logo">
+                <h1 class = "name"><a href="index.html">Hanwen Ju</a></h1>        
+            </div>
+        
+            <nav class = "nevigation">
+                <ul class = "navlist">
+                  <li><a href="about.html">About</a></li>
+                  <li><a href="gallery.html">Gallery </a></li>
+                  <li><a href="project.html">Projects</a></li>
+                  <li><a href="lab.html">Lab</a></li>
+                  <li><a href="blog.html">Blogs</a></li>
+                  <li> <a href="D:\work\Resume3.13.pdf" target="_blank" >CV</a></li>
+                  <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+        
+
+        
+
+        <div class="cont2_index">
+            <div id="carousel">
+              <ul> <!-- 图片容器 -->
+                  <li>
+                      <div class="slide"><img src="D:\网站\photos\9d1d81decc480177a0fac96105f71df.png" ></div>
+                  </li>
+                  <li>
+                      <div class="slide"><img src="D:\网站\photos\0559e6ee54faf9b8454ebe4c8445754.png"></div>
+                  </li>
+                  <li>
+                      <div class="slide"><img src="D:\网站\photos\bc9df49d739a00149636ba92d002db6.png"></div>
+                  </li>
+              </ul>
+            </div>
+        
+        </div>
+    </div>
+
+
+    
+</body>
+  <script type="text/javascript">
+    var imgArr = []; // 图片数组
+    var curIndex = 0; // 当前显示图片
+    var timer = null; // 定时器
+    
+    function slide(slideContainer){
+        var width = imgArr[curIndex].width; // 获取图片宽度，也就是每次切换图片要滑动的距离
+        var distanceMoved = 0; // 已经移动的距离
+        var step = 10; //切换的步长
+        var curConLeft = slideContainer.offsetLeft; // 获取ul的left
+        var slideInterval = setInterval(function (){ // 此定时器是为了实现切换动画
+            if(Math.abs(width - distanceMoved) > step){ // 边界判定，判断已移动距离以及应移动距离的差与步长关系
+                curConLeft -= step; // 大于步长则不断移动
+                slideContainer.style.left = `${curConLeft}px`; // 移动
+                distanceMoved += step; // 已移动距离加步长
+            }else{ 
+                clearInterval(slideInterval); // 若最后移动距离不足步长，则清除动画定时器
+                slideContainer.style.left = `${curConLeft - width + distanceMoved }px`; // 直接完成此次动画
+                distanceMoved = 0; // 重设移动距离为0
+                if(++curIndex === imgArr.length){ // index加1，判断是否为最后一张来作边缘处理
+                    curIndex = 0; // 最后一张则重置index
+                    slideContainer.style.left = 0;  // 重置ul
+                }
+            }
+        }, 10);
+    }
+
+    (function start() {
+        var config = {
+            height: "200px", // 配置高度
+            interval: 5000 // 配置轮播时间间隔
+        }
+        document.getElementById("carousel").style.height = config.height; // 将轮播容器高度设定
+        document.querySelectorAll("#carousel img").forEach(v => imgArr.push(v)); // 获取所有图片组成数组
+        var slideContainer = document.querySelector("#carousel > ul"); // 获取ul也就是一行图片的容器
+        var li = document.createElement("li"); // 创建<li>
+        var img = document.createElement("img"); // 创建新的<img>
+        img.src = imgArr[0].src; // 设置图片src
+        li.appendChild(img); // 追加<img>到<li>
+        slideContainer.appendChild(li); // 将第一张图片追加到轮播图的最后，作边缘处理
+        timer = setInterval(() => {slide(slideContainer)},config.interval); // 设置定时器定时切换
+    })();
+  </script>
+
+</html>
