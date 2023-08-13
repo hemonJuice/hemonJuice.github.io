@@ -31,25 +31,22 @@
 
 .cont2_blog {
     
-    /* flex:2; */
-    
-    /* background-image: url("file:///C:/Users/99506/Desktop/1f11f341d2efa579910daacc3022692.png");
-    background-size: cover; */
-    /* opacity: 0.5; */
-    background-color: #f1f1f1;
-    
-    /* box-sizing: border-box; */
-    /* margin-left: 440px; */
+    /* background-color: #f1f1f1;
     left: 50%;
-    /* padding: 20px; */
     height: 100%; 
-    /* flex-direction: column;
+    position: fixed; */
+
+    
+    background-color: #f1f1f1;
+    /* box-sizing: border-box; */
+    margin-left: 440px;
+    padding-left: 20px;
+    padding-right:20px;
+    padding-bottom: 20px;
+    padding-top: 190px;
     display: flex;
-    justify-content: flex-end; 
-    align-items: center;
-    font-family: adobe-garamond-pro, serif;
-    font-size: large; */
-    position: fixed;
+    flex-direction: column;
+    flex-wrap: wrap;
 
     
 }
@@ -58,7 +55,7 @@
     font-family: adobe-garamond-pro, serif;
     font-weight: 600;
     font-style: normal;
-    padding-top: 190px;
+    /* padding-top: 190px; */
     line-height: 30px; 
 
 }
