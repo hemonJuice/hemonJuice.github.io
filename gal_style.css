@@ -1,6 +1,6 @@
-*{
-    padding:0px;
-    margin:0px;
+* {
+    padding: 0px;
+    margin: 0px;
 }
 
 html, body {
@@ -8,26 +8,17 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: #f1f1f1;  /* 灰色背景 */
+    background-color: #f1f1f1;
 }
 
-.mainCont_gal{
-    /* display: flex;
-    flex-direction: row; */
+.mainCont_gal {
+    display: flex;
     width: 100%;
     height: 100%;
-    /* position: fixed; */
     background-color: #f1f1f1;
 }
 
 .cont1_gal {
-    /* background-color: aqua; */
-    /* float: left;
-    width: 30%;
-    height: 100%;
-    position: fixed;
-    z-index: 999; */
-    /* flex: 1; */
     position: fixed;
     top: 0;
     left: 0;
@@ -38,121 +29,108 @@ html, body {
 }
 
 .cont2_gal {
-    
-    /* flex:2; */
-    
-    /* background-image: url("file:///C:/Users/99506/Desktop/1f11f341d2efa579910daacc3022692.png");
-    background-size: cover; */
-    /* opacity: 0.5; */
-    background-color: #f1f1f1;
-    
-    box-sizing: border-box;
-    margin-left: 440px;
-    
+    margin-left: 420px;  /* Adjust to leave space for the fixed left bar */
     padding: 20px;
-    height: 100%; 
-    
-    display: flex;
-    flex-direction: column;
-
-    
-}
-
-.pic_cont { 
-    width: 100%;
-    /* height: 100px; */
-    margin-bottom: 20px;
-    /* background-color: red; */
-    /* overflow: hidden; */
+    background-color: #f1f1f1;
+    box-sizing: border-box;
     display: flex;
     flex-direction: row;
-
+    flex-wrap: wrap;  /* Allow items to wrap */
+    gap: 15px;  /* Set spacing between rows */
+    height: 100vh;  /* Ensure cont2_gal takes full viewport height */
+    overflow-y: auto;  /* Enable vertical scrolling */
 }
 
-.pic {
+.row {
+    width: calc(33.33% - 10px);  /* Three items per row with gap */
+    padding: 10px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.row img {
     width: 100%;
-    height: 100px;
+    height: auto;
+    /* border-radius: 5px; */
 }
-
-
-
-
 
 .degree {
-    font-family: italic;
-    /* font-style: normal; */
+    font-style: italic;
 }
-
-
-
-
 
 a.underline {
     text-decoration: underline;
-  }
-
-
-
+}
 
 .logo {
     height: 70px;
     width: 80%;
     padding-top: 100px;
     padding-left: 100px;
-    
     font-family: adobe-garamond-pro, serif;
     font-weight: 600;
     font-style: normal;
-    
 }
 
 .nevigation {
-     
-    /* position: relative;  */
-      
-  
     width: 80%;
-    height: 100%;
-    line-height: 30px; 
-    font-size: 20px; 
-
+    height: 160px;
+    line-height: 30px;
+    font-size: 20px;
     padding-left: 100px;
-
-    
     font-family: adobe-garamond-pro, serif;
     font-weight: 600;
     font-style: normal;
-    
-    
+}
+
+.select {
+    padding-left: 100px;
+}
+.styled-select select {
+    width: 150px;
+    height: 40px; /* Increased height */
+    padding: 5px; /* Padding inside the dropdown */
+    font-size: 16px; /* Larger font size */
+    border: 3px solid #000; /* Bold border */
+    border-radius: 0; /* Square corners */
+    background-color: #f9f9f9; /* Same as background */
+    appearance: none; /* Remove dropdown arrow */
+    -webkit-appearance: none; /* Remove dropdown arrow in webkit browsers */
+    -moz-appearance: none; /* Remove dropdown arrow in Firefox */
 }
 
 .navlist {
     list-style: none;
-    
 }
-
-
-
-/* ------------------------------------------------------------------------------------------------------------------------------------------------------- */
-
-
-
-
-
 
 a {
     text-decoration: none;
     color: black;
-    /* cursor:pointer */
-} 
+}
 
 a:hover {
     color: rgb(180, 180, 180);
     text-decoration: none;
 }
 
-html,body {
-    margin: 0;
-    height: 100%;
-    width: 100%;
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+    .row {
+        width: calc(50% - 10px);  /* Two items per row on medium screens */
+    }
 }
+
+@media (max-width: 480px) {
+    .row {
+        width: 100%;  /* One item per row on small screens */
+    }
+    .cont1_gal {
+        width: 100%;  /* Adjust the left panel to take full width on small screens */
+    }
+    .cont2_gal {
+        margin-left: 0;
+    }
+}
+
+
+
