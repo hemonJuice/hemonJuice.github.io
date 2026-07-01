@@ -78,12 +78,18 @@ a.underline {
     height: 70px;
     width: 80%;
     padding-top: 100px;
-    padding-left: 100px;
+    padding-left: 92px;
     
     font-family: adobe-garamond-pro, serif;
-    font-weight: 600;
+    font-weight: 500;
     font-style: normal;
     
+}
+
+.name {
+    font-size: 25px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
 }
 
 .nevigation {
@@ -93,14 +99,14 @@ a.underline {
   
     width: 80%;
     height: 100%;
-    line-height: 30px; 
-    font-size: 20px; 
+    line-height: 24px; 
+    font-size: 16px; 
 
-    padding-left: 100px;
+    padding-left: 92px;
 
     
     font-family: adobe-garamond-pro, serif;
-    font-weight: 600;
+    font-weight: 500;
     font-style: normal;
     
     
@@ -109,6 +115,14 @@ a.underline {
 .navlist {
     list-style: none;
     
+}
+
+.navlist li {
+    margin-bottom: 1px;
+}
+
+.navlist a {
+    color: #333333;
 }
 
 
@@ -135,4 +149,26 @@ html,body {
     margin: 0;
     height: 100%;
     width: 100%;
+}
+
+.site_copyright {
+    bottom: 34px;
+    color: #9a9a9a;
+    font-family: adobe-garamond-pro, serif;
+    font-size: 11px;
+    font-weight: 500;
+    left: 112px;
+    line-height: 1.35;
+    max-width: 190px;
+    position: fixed;
+}
+
+@media (max-width: 850px) {
+    .site_copyright {
+        bottom: auto;
+        left: auto;
+        margin-left: 30px;
+        margin-top: 28px;
+        position: static;
+    }
 }

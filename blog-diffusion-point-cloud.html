@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hanwen Ju | An Experiment with Encoder-Free Diffusion for 3D Point Clouds</title>
+    <link rel="stylesheet" type="text/css" href="blog_style.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="https://use.typekit.net/qys7zuv.css">
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [["\\(", "\\)"]],
+                displayMath: [["\\[", "\\]"]]
+            }
+        };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+
+    <div class="mainCont_blog">
+
+        <div class="cont1_blog">
+            <div class="logo">
+                <h1 class="name"><a href="index.html">Hanwen Ju</a></h1>
+            </div>
+
+            <nav class="nevigation">
+                <ul class="navlist">
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="gallery.html">Gallery </a></li>
+                    <li><a href="project.html">Publication</a></li>
+                    <!-- <li><a href="lab.html">Lab</a></li> -->
+                    <li><a href="blog.html">Blogs</a></li>
+                    <!-- <li> <a href="D:\work\Resume3.13.pdf" target="_blank" >CV</a></li> -->
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+
+            <p class="site_copyright">© 2026 Hanwen Ju. All rights reserved.</p>
+        </div>
+
+        <div class="cont2_blog">
+            <article class="blog_post">
+                <a class="blog_back_link" href="blog.html">Back to Blogs</a>
+                <time class="blog_post_date">2024.04.15</time>
+                <h2 class="blog_post_title">An Experiment with Encoder-Free Diffusion for 3D Point Clouds</h2>
+
+                <p>
+                    This project asked a simple question: can a diffusion model generate 3D point clouds directly from raw point coordinates, without first compressing the shape into a latent code or voxelizing it into a grid?
+                </p>
+
+                <p>
+                    Most diffusion-based 3D generation methods use either a latent representation or a voxel-like structure. Here, I tried a more direct setup: represent a point cloud as an unordered set \(X_0 \in \mathbb{R}^{N \times 3}\), add Gaussian noise to the xyz coordinates, and train a point-cloud network to reverse the process.
+                </p>
+
+                <h3 class="blog_section_title">1. Starting from DDPM</h3>
+
+                <p>
+                    I followed the DDPM formulation <a href="#ref-ddpm">[1]</a>. The forward process gradually corrupts a clean point cloud \(X_0\) into noise:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    q(X_{1:T} \mid X_0) = \prod_{t=1}^{T} q(X_t \mid X_{t-1})
+                    \]
+                </div>
+
+                <div class="blog_equation">
+                    \[
+                    q(X_t \mid X_{t-1}) =
+                    \mathcal{N}\left(X_t;\sqrt{1-\beta_t}X_{t-1}, \beta_t I\right).
+                    \]
+                </div>
+
+                <p>
+                    With the standard reparameterization trick, we do not need to simulate every previous step during training:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    X_t = \sqrt{\bar{\alpha}_t}X_0 + \sqrt{1-\bar{\alpha}_t}\epsilon,
+                    \quad
+                    \epsilon \sim \mathcal{N}(0, I),
+                    \quad
+                    \bar{\alpha}_t = \prod_{s=1}^{t}(1-\beta_s).
+                    \]
+                </div>
+
+                <p>
+                    The denoising network learns to predict the noise added to the point cloud. The simplified training objective is:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \mathcal{L}_{simple}(\theta)
+                    =
+                    \mathbb{E}_{t, X_0, \epsilon}
+                    \left[
+                    \left\|
+                    \epsilon -
+                    \epsilon_{\theta}\left(
+                    \sqrt{\bar{\alpha}_t}X_0 + \sqrt{1-\bar{\alpha}_t}\epsilon,
+                    t
+                    \right)
+                    \right\|^2
+                    \right].
+                    \]
+                </div>
+
+                <p>
+                    During sampling, the model starts from Gaussian noise and repeatedly applies the learned reverse transition. Conceptually, the model is asked to turn a noisy unordered set of 3D points into a coherent shape.
+                </p>
+
+                <h3 class="blog_section_title">2. Why PointNet as the Denoiser?</h3>
+
+                <p>
+                    A point cloud is not an image: the points are unordered, and there is no fixed grid where local convolution naturally applies. This is why I used PointNet and PointNet++ ideas <a href="#ref-pointnet">[2]</a>, <a href="#ref-pointnetpp">[3]</a>. PointNet is built around permutation-invariant set processing. A simplified form of its universal approximation statement is:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    f(S) \approx \gamma\left(\max_{x_i \in S} h(x_i)\right),
+                    \]
+                </div>
+
+                <p>
+                    where \(S\) is a set of points, \(h\) extracts point-wise features, max pooling aggregates a global set feature, and \(\gamma\) maps that global feature to the target output. For denoising, I used a segmentation-style PointNet head so the network outputs another \(N \times 3\) tensor, matching the shape of the input point cloud.
+                </p>
+
+                <figure class="blog_figure">
+                    <img src="blog_assets/diffusion/architecture.png" alt="PointNet denoising architecture with time embedding" loading="lazy" decoding="async">
+                    <figcaption>PointNet-style denoising block with time embedding.</figcaption>
+                </figure>
+
+                <p>
+                    The timestep \(t\) is important because denoising at low noise and high noise are different tasks. I added sinusoidal time embeddings, inspired by Transformer positional embeddings <a href="#ref-transformer">[4]</a>, and injected them into the PointNet blocks. I also used residual connections so the network could preserve low-level coordinate information while learning time-dependent corrections.
+                </p>
+
+                <h3 class="blog_section_title">3. EDM Parameterization</h3>
+
+                <p>
+                    After building the DDPM baseline, I also tested EDM parameterization <a href="#ref-edm">[5]</a>. Instead of training the network to directly predict one fixed target form, EDM wraps the model output with noise-dependent scaling:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    D_{\theta}(x; \sigma)
+                    =
+                    c_{skip}(\sigma)x
+                    +
+                    c_{out}(\sigma)
+                    F_{\theta}\left(c_{in}(\sigma)x; c_{noise}(\sigma)\right).
+                    \]
+                </div>
+
+                <p>
+                    In this form, \(F_{\theta}\) is the neural network, \(\sigma\) is the noise level, and the coefficients normalize the input and output across different noise scales. In my implementation, I used:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    c_{skip}(\sigma)=\frac{\sigma_{data}^2}{\sigma^2+\sigma_{data}^2},
+                    \quad
+                    c_{out}(\sigma)=
+                    \frac{\sigma\sigma_{data}}{\sqrt{\sigma^2+\sigma_{data}^2}},
+                    \quad
+                    c_{in}(\sigma)=
+                    \frac{1}{\sqrt{\sigma^2+\sigma_{data}^2}}.
+                    \]
+                </div>
+
+                <p>
+                    Practically, this made the generation process more stable and much faster during sampling. The EDM sampler reached good metric values in far fewer steps than the DDPM sampler.
+                </p>
+
+                <h3 class="blog_section_title">4. Generated Samples</h3>
+
+                <p>
+                    Below are generated airplane, chair, and car point clouds from the EDM version. The results are not perfect, but they show that a direct point-coordinate diffusion process can learn recognizable 3D structures.
+                </p>
+
+                <div class="blog_image_grid">
+                    <img src="blog_assets/diffusion/edm_plane1.jpeg" alt="Generated airplane point cloud sample 1" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_plane2.jpeg" alt="Generated airplane point cloud sample 2" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_plane3.jpeg" alt="Generated airplane point cloud sample 3" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_plane4.jpeg" alt="Generated airplane point cloud sample 4" loading="lazy" decoding="async">
+                </div>
+
+                <div class="blog_image_grid">
+                    <img src="blog_assets/diffusion/edm_chair1.jpeg" alt="Generated chair point cloud sample 1" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_chair3.jpeg" alt="Generated chair point cloud sample 2" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_chair4.jpeg" alt="Generated chair point cloud sample 3" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_chair5.jpeg" alt="Generated chair point cloud sample 4" loading="lazy" decoding="async">
+                </div>
+
+                <div class="blog_image_grid">
+                    <img src="blog_assets/diffusion/edm_car1.jpeg" alt="Generated car point cloud sample 1" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_car3.jpeg" alt="Generated car point cloud sample 2" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_car4.jpeg" alt="Generated car point cloud sample 3" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_car5.jpeg" alt="Generated car point cloud sample 4" loading="lazy" decoding="async">
+                </div>
+
+                <h3 class="blog_section_title">5. Model Comparison</h3>
+
+                <p>
+                    I compared six variants: PointNet, PointNet++, and PointNet++ with multi-scale grouping, each under DDPM and EDM settings. Quantitatively, I used common point cloud generation metrics: MMD-CD, coverage, 1-NN accuracy, and JSD, following prior work on diffusion point cloud generation <a href="#ref-luo">[6]</a>.
+                </p>
+
+                <table class="blog_table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>MMD ↓</th>
+                            <th>COV ↑</th>
+                            <th>1-NNA ↓</th>
+                            <th>JSD ↓</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>PointNet (DDPM)</td>
+                            <td>0.527</td>
+                            <td>0.038</td>
+                            <td>0.999</td>
+                            <td>0.205</td>
+                        </tr>
+                        <tr>
+                            <td>PointNet++ (DDPM)</td>
+                            <td>0.175</td>
+                            <td>0.006</td>
+                            <td>0.998</td>
+                            <td>0.063</td>
+                        </tr>
+                        <tr>
+                            <td>PointNet++ MSG (DDPM)</td>
+                            <td>0.131</td>
+                            <td>0.005</td>
+                            <td>0.995</td>
+                            <td>0.114</td>
+                        </tr>
+                        <tr>
+                            <td>PointNet (EDM)</td>
+                            <td>0.185</td>
+                            <td>0.176</td>
+                            <td>0.966</td>
+                            <td>0.037</td>
+                        </tr>
+                        <tr>
+                            <td>PointNet++ (EDM)</td>
+                            <td>0.119</td>
+                            <td>0.112</td>
+                            <td>0.992</td>
+                            <td>0.028</td>
+                        </tr>
+                        <tr>
+                            <td>PointNet++ MSG (EDM)</td>
+                            <td>0.126</td>
+                            <td>0.152</td>
+                            <td>0.991</td>
+                            <td>0.027</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    The main pattern was clear: EDM improved generation quality and sampling efficiency. PointNet++ with EDM achieved the best MMD, while PointNet++ MSG with EDM achieved the best JSD. Interestingly, the simpler PointNet EDM model had strong coverage and 1-NNA, suggesting that even a relatively simple set network can work as a useful denoiser when the diffusion objective is well structured.
+                </p>
+
+                <div class="blog_image_grid">
+                    <img src="blog_assets/diffusion/point_plane1.jpeg" alt="PointNet DDPM airplane generation sample" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/msg_plane1.jpeg" alt="PointNet++ MSG DDPM airplane generation sample" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_point_plane1.jpeg" alt="PointNet EDM airplane generation sample" loading="lazy" decoding="async">
+                    <img src="blog_assets/diffusion/edm_msg_plane1.jpeg" alt="PointNet++ MSG EDM airplane generation sample" loading="lazy" decoding="async">
+                </div>
+
+                <figure class="blog_figure">
+                    <img src="blog_assets/diffusion/mmd_steps.png" alt="MMD over sampling steps for diffusion point cloud models" loading="lazy" decoding="async">
+                    <figcaption>MMD-CD across sampling steps.</figcaption>
+                </figure>
+
+                <figure class="blog_figure">
+                    <img src="blog_assets/diffusion/jsd_steps.png" alt="JSD over sampling steps for diffusion point cloud models" loading="lazy" decoding="async">
+                    <figcaption>JSD across sampling steps.</figcaption>
+                </figure>
+
+                <h3 class="blog_section_title">6. What I Learned</h3>
+
+                <p>
+                    The main takeaway is that encoder-free point diffusion is possible, at least for recognizable shape generation. The model does not need a latent shape encoder to learn a meaningful reverse process. However, the generated point clouds can still look blurred or structurally weak compared with methods that use stronger representations, such as latent point diffusion or point-voxel diffusion <a href="#ref-zhou">[7]</a>, <a href="#ref-lion">[8]</a>.
+                </p>
+
+                <p>
+                    My next step would be to replace the denoiser with a stronger point architecture, such as a Point Transformer, or to add attention blocks into the PointNet/PointNet++ backbone. Another interesting direction is point cloud translation, where this model could potentially be combined with diffusion bridge ideas.
+                </p>
+
+                <h3 class="blog_section_title">References</h3>
+
+                <ol class="blog_references">
+                    <li id="ref-ddpm">Ho, J., Jain, A., & Abbeel, P. (2020). Denoising Diffusion Probabilistic Models. <em>NeurIPS</em>.</li>
+                    <li id="ref-pointnet">Qi, C. R., Su, H., Mo, K., & Guibas, L. J. (2017). PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation. <em>CVPR</em>.</li>
+                    <li id="ref-pointnetpp">Qi, C. R., Yi, L., Su, H., & Guibas, L. J. (2017). PointNet++: Deep Hierarchical Feature Learning on Point Sets in a Metric Space. <em>NeurIPS</em>.</li>
+                    <li id="ref-transformer">Vaswani, A., et al. (2017). Attention Is All You Need. <em>NeurIPS</em>.</li>
+                    <li id="ref-edm">Karras, T., Aittala, M., Aila, T., & Laine, S. (2022). Elucidating the Design Space of Diffusion-Based Generative Models. <em>NeurIPS</em>.</li>
+                    <li id="ref-luo">Luo, S., & Hu, W. (2021). Diffusion Probabilistic Models for 3D Point Cloud Generation. <em>CVPR</em>.</li>
+                    <li id="ref-zhou">Zhou, L., Du, Y., & Wu, J. (2021). 3D Shape Generation and Completion through Point-Voxel Diffusion. <em>ICCV</em>.</li>
+                    <li id="ref-lion">Vahdat, A., et al. (2022). LION: Latent Point Diffusion Models for 3D Shape Generation. <em>NeurIPS</em>.</li>
+                </ol>
+
+                <p class="blog_copyright">
+                    © 2026 Hanwen Ju. All rights reserved. The writing, original project notes, and figures from this project are copyrighted by the author unless otherwise noted. Referenced works remain the property of their respective authors and publishers.
+                </p>
+            </article>
+        </div>
+    </div>
+
+</body>
+</html>

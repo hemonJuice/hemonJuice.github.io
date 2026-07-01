@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hanwen Ju | Notes on Prediction Error</title>
+    <link rel="stylesheet" type="text/css" href="blog_style.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="https://use.typekit.net/qys7zuv.css">
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [["\\(", "\\)"]],
+                displayMath: [["\\[", "\\]"]]
+            }
+        };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+
+    <div class="mainCont_blog">
+
+        <div class="cont1_blog">
+            <div class="logo">
+                <h1 class="name"><a href="index.html">Hanwen Ju</a></h1>
+            </div>
+
+            <nav class="nevigation">
+                <ul class="navlist">
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="gallery.html">Gallery </a></li>
+                    <li><a href="project.html">Publication</a></li>
+                    <!-- <li><a href="lab.html">Lab</a></li> -->
+                    <li><a href="blog.html">Blogs</a></li>
+                    <!-- <li> <a href="D:\work\Resume3.13.pdf" target="_blank" >CV</a></li> -->
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+
+            <p class="site_copyright">© 2026 Hanwen Ju. All rights reserved.</p>
+        </div>
+
+        <div class="cont2_blog">
+            <article class="blog_post">
+                <a class="blog_back_link" href="blog.html">Back to Blogs</a>
+                <time class="blog_post_date">2026.07.01</time>
+                <h2 class="blog_post_title">Notes on Prediction Error</h2>
+
+                <p>
+                    These are my notes after reading Chapter 7 of <em>The Elements of Statistical Learning</em>. The main question is simple: after fitting a model, how should we think about the error it will make on data that was not used to train it?
+                </p>
+
+                <h3 class="blog_section_title">1. Several Errors That Sound Similar</h3>
+
+                <p>
+                    The most immediate quantity is the training error:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \overline{err}
+                    =
+                    \frac{1}{N}
+                    \sum_{i=1}^{N}
+                    L(y_i, \hat f(x_i)).
+                    \]
+                </div>
+
+                <p>
+                    This is easy to compute, but it is usually too optimistic. The model has already seen these responses, so a flexible model can reduce this number by fitting not only the signal but also part of the noise.
+                </p>
+
+                <p>
+                    For a fixed training set \(\mathcal{T}\), the conditional test error is the expected loss on a new independent observation:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    Err_{\mathcal{T}}
+                    =
+                    \mathbb{E}_{X,Y}
+                    \left[
+                    L(Y, \hat f(X))
+                    \mid
+                    \mathcal{T}
+                    \right].
+                    \]
+                </div>
+
+                <p>
+                    If we also average over possible training sets, we get the expected test error:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    Err
+                    =
+                    \mathbb{E}_{\mathcal{T}}
+                    \left[
+                    Err_{\mathcal{T}}
+                    \right]
+                    =
+                    \mathbb{E}_{X,Y,\mathcal{T}}
+                    \left[
+                    L(Y,\hat f(X))
+                    \right].
+                    \]
+                </div>
+
+                <p>
+                    ESL also discusses in-sample error. Here the input points \(x_i\) are fixed at the observed training inputs, but the responses are imagined as newly sampled:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    Err_{in}
+                    =
+                    \frac{1}{N}
+                    \sum_{i=1}^{N}
+                    \mathbb{E}_{Y_i^0}
+                    \left[
+                    L(Y_i^0, \hat f(x_i))
+                    \mid
+                    \mathcal{T}
+                    \right].
+                    \]
+                </div>
+
+                <p>
+                    This separates two issues: evaluating on the same input locations, but not reusing the same noisy labels. It is useful for understanding why training error is biased downward.
+                </p>
+
+                <h3 class="blog_section_title">2. Optimism</h3>
+
+                <p>
+                    Optimism is the gap between in-sample error and training error:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    op = Err_{in} - \overline{err}.
+                    \]
+                </div>
+
+                <p>
+                    A correction to my original notes: optimism is usually positive in expectation, not negative. The training error is called optimistic because it is smaller than the error we expect on newly sampled responses.
+                </p>
+
+                <p>
+                    Under squared-error loss, fixing the predictors and averaging over the responses gives the expected optimism:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \omega
+                    =
+                    \mathbb{E}_{\mathbf{y}}(op)
+                    =
+                    \frac{2}{N}
+                    \sum_{i=1}^{N}
+                    \operatorname{Cov}(\hat y_i, y_i).
+                    \]
+                </div>
+
+                <p>
+                    This formula is a compact way to say that overfitting is related to how strongly the fitted values move with the observed noisy responses. If \(\hat y_i\) changes a lot when \(y_i\) changes, then the model is using the training labels very aggressively.
+                </p>
+
+                <p>
+                    Suppose the data follow:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    y_i = f(x_i) + \varepsilon_i,
+                    \quad
+                    \varepsilon_i \overset{i.i.d.}{\sim} \mathcal{N}(0,\sigma^2).
+                    \]
+                </div>
+
+                <p>
+                    The goal is to learn \(f\), not the realized noise \(\varepsilon_i\). When a model is too flexible, it may behave like:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \hat f(x_i) \approx y_i = f(x_i) + \varepsilon_i.
+                    \]
+                </div>
+
+                <p>
+                    This makes the training error look small, but the fitted function has absorbed random noise that will not repeat in future samples.
+                </p>
+
+                <h3 class="blog_section_title">3. Effective Degrees of Freedom</h3>
+
+                <p>
+                    For many linear fitting methods, the fitted values can be written as:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \hat{\mathbf{y}} = S\mathbf{y},
+                    \]
+                </div>
+
+                <p>
+                    where \(S\) is a smoother matrix. In this case:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \sum_{i=1}^{N}
+                    \operatorname{Cov}(\hat y_i, y_i)
+                    =
+                    \sigma^2 \operatorname{tr}(S).
+                    \]
+                </div>
+
+                <p>
+                    The quantity \(\operatorname{tr}(S)\) is called the effective degrees of freedom. Therefore:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \mathbb{E}_{\mathbf{y}}(Err_{in})
+                    =
+                    \mathbb{E}_{\mathbf{y}}(\overline{err})
+                    +
+                    \frac{2\sigma^2}{N}
+                    \operatorname{tr}(S).
+                    \]
+                </div>
+
+                <p>
+                    For ordinary least squares with \(d\) parameters, \(\operatorname{tr}(S)=d\), giving the familiar correction:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \omega = \frac{2d\sigma^2}{N}.
+                    \]
+                </div>
+
+                <p>
+                    For ridge regression,
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    \hat{\mathbf{y}}
+                    =
+                    X(X^TX+\lambda I)^{-1}X^T\mathbf{y}.
+                    \]
+                </div>
+
+                <p>
+                    Its effective degrees of freedom are:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    df(\lambda)
+                    =
+                    \operatorname{tr}
+                    \left[
+                    X(X^TX+\lambda I)^{-1}X^T
+                    \right]
+                    =
+                    \sum_{j}
+                    \frac{\eta_j}{\eta_j+\lambda},
+                    \]
+                </div>
+
+                <p>
+                    where \(\eta_j\) are the eigenvalues of \(X^TX\). As \(\lambda\) increases, \(df(\lambda)\) decreases, so the model becomes less sensitive to individual noisy responses.
+                </p>
+
+                <h3 class="blog_section_title">4. Bias-Variance Decomposition</h3>
+
+                <p>
+                    For regression with squared error, assume:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    Y = f(X) + \varepsilon,
+                    \quad
+                    \mathbb{E}[\varepsilon]=0,
+                    \quad
+                    \operatorname{Var}(\varepsilon)=\sigma^2.
+                    \]
+                </div>
+
+                <p>
+                    At a fixed point \(x_0\), averaging over possible training sets and response noise:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    Err(x_0)
+                    =
+                    \mathbb{E}
+                    \left[
+                    (Y-\hat f(x_0))^2
+                    \mid X=x_0
+                    \right].
+                    \]
+                </div>
+
+                <p>
+                    This decomposes into:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    Err(x_0)
+                    =
+                    \underbrace{\sigma^2}_{\text{irreducible error}}
+                    +
+                    \underbrace{
+                    \left(
+                    \mathbb{E}[\hat f(x_0)] - f(x_0)
+                    \right)^2
+                    }_{\text{bias}^2}
+                    +
+                    \underbrace{
+                    \mathbb{E}
+                    \left[
+                    \left(
+                    \hat f(x_0)-\mathbb{E}[\hat f(x_0)]
+                    \right)^2
+                    \right]
+                    }_{\text{variance}}.
+                    \]
+                </div>
+
+                <p>
+                    A very simple model tends to have high bias and low variance. A very flexible model tends to have low bias and high variance. The useful model is rarely the one with the smallest training error; it is the one that manages this tradeoff best for new data.
+                </p>
+
+                <h3 class="blog_section_title">5. How to Estimate Prediction Error</h3>
+
+                <p>
+                    In practice, we usually do not know \(Err\). We estimate it. Common approaches include:
+                </p>
+
+                <ul class="blog_bullets">
+                    <li>Validation set: simple and honest, but can waste data when the sample size is small.</li>
+                    <li>Cross-validation: repeatedly holds out parts of the data and averages the error.</li>
+                    <li>Bootstrap: resamples the data to estimate uncertainty and prediction error.</li>
+                    <li>Analytic corrections such as \(C_p\), AIC, and related optimism-based criteria.</li>
+                </ul>
+
+                <p>
+                    The conceptual link is that all of these methods try to correct the same problem: training error is not the same as future prediction error.
+                </p>
+
+                <h3 class="blog_section_title">6. A Small Bayesian Note</h3>
+
+                <p>
+                    A Bayesian model can express prediction uncertainty through the posterior predictive distribution:
+                </p>
+
+                <div class="blog_equation">
+                    \[
+                    p(y_0 \mid x_0, \mathcal{T})
+                    =
+                    \int
+                    p(y_0 \mid x_0, \theta)
+                    p(\theta \mid \mathcal{T})
+                    d\theta.
+                    \]
+                </div>
+
+                <p>
+                    This does not remove prediction error, but it changes how uncertainty is represented. Instead of only producing one fitted value, the model produces a distribution over possible future responses. From that distribution, we can evaluate expected loss under a chosen loss function.
+                </p>
+
+                <h3 class="blog_section_title">What I Want to Remember</h3>
+
+                <p>
+                    Prediction error is not just one number. Training error, in-sample error, conditional test error, and expected test error answer different questions. The most important warning is that a model can look good because it has learned the particular noise pattern in the training set. Optimism, effective degrees of freedom, and bias-variance decomposition are three different ways to describe this same danger.
+                </p>
+
+                <h3 class="blog_section_title">Reference</h3>
+
+                <ol class="blog_references">
+                    <li>Hastie, T., Tibshirani, R., & Friedman, J. (2009). <em>The Elements of Statistical Learning: Data Mining, Inference, and Prediction</em>. Second Edition. Springer. Chapter 7.</li>
+                </ol>
+
+                <p class="blog_copyright">
+                    © 2026 Hanwen Ju. All rights reserved. These notes are my own summary and interpretation of prediction error concepts from ESL. The original book remains the property of its authors and publisher.
+                </p>
+            </article>
+        </div>
+    </div>
+
+</body>
+</html>
